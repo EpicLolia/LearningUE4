@@ -13,6 +13,7 @@
 // ALearningUE4Character
 
 ALearningUE4Character::ALearningUE4Character()
+	: bHasTouched(false)
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
@@ -20,6 +21,7 @@ ALearningUE4Character::ALearningUE4Character()
 	// set our turn rates for input
 	BaseTurnRate = 45.f;
 	BaseLookUpRate = 45.f;
+	BaseTouchRotateRate = 50.f;
 
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
@@ -40,7 +42,8 @@ ALearningUE4Character::ALearningUE4Character()
 
 	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
-	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
+	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+	// Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
@@ -70,6 +73,7 @@ void ALearningUE4Character::SetupPlayerInputComponent(class UInputComponent* Pla
 
 	// handle touch devices
 	PlayerInputComponent->BindTouch(IE_Pressed, this, &ALearningUE4Character::TouchStarted);
+	PlayerInputComponent->BindTouch(IE_Repeat, this, &ALearningUE4Character::TouchMoved);
 	PlayerInputComponent->BindTouch(IE_Released, this, &ALearningUE4Character::TouchStopped);
 
 	// VR headset functionality
@@ -90,12 +94,23 @@ void ALearningUE4Character::OnResetVR()
 
 void ALearningUE4Character::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
 {
-		Jump();
+	PreviousTouchLocation = Location;
 }
 
 void ALearningUE4Character::TouchStopped(ETouchIndex::Type FingerIndex, FVector Location)
 {
-		StopJumping();
+}
+
+void ALearningUE4Character::TouchMoved(ETouchIndex::Type FingerIndex, FVector Location)
+{
+	FVector2D ViewportSize;
+	GetWorld()->GetGameViewport()->GetViewportSize(ViewportSize);
+	if (Location.X > ViewportSize.X / 4) // 能在右3/4屏幕控制视角旋转
+	{
+		AddControllerYawInput((Location.X - PreviousTouchLocation.X) * 0.002 * BaseTouchRotateRate);
+		AddControllerPitchInput((Location.Y - PreviousTouchLocation.Y) * 0.002 * BaseTouchRotateRate);
+	}
+	PreviousTouchLocation = Location;
 }
 
 void ALearningUE4Character::TurnAtRate(float Rate)
@@ -126,12 +141,12 @@ void ALearningUE4Character::MoveForward(float Value)
 
 void ALearningUE4Character::MoveRight(float Value)
 {
-	if ( (Controller != nullptr) && (Value != 0.0f) )
+	if ((Controller != nullptr) && (Value != 0.0f))
 	{
 		// find out which way is right
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
-	
+
 		// get right vector 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		// add movement in that direction

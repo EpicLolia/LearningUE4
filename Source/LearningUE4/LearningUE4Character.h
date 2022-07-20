@@ -29,6 +29,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseLookUpRate;
 
+	/** Base touch rotate rate. Other scaling may affect final rate. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera,meta = (ClampMin=0,ClampMax=100))
+	float BaseTouchRotateRate;
+
 protected:
 
 	/** Resets HMD orientation in VR. */
@@ -58,6 +62,12 @@ protected:
 	/** Handler for when a touch input stops. */
 	void TouchStopped(ETouchIndex::Type FingerIndex, FVector Location);
 
+	/** Handler for when a touch input moves. */
+	void TouchMoved(ETouchIndex::Type FingerIndex, FVector Location);
+	
+private:
+	FVector PreviousTouchLocation;
+	
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;

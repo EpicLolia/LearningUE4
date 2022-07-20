@@ -3,7 +3,10 @@ Build
 DerivedDataCache
 Intermediate
 Saved
-Script
+Content/Collections/
+Content/Developers/
+Plugins/*/Binaries/
+Plugins/*/Intermediate/
 .vscode
 .vs
 *.VC.db
@@ -14,3 +17,6 @@ Script
 *.suo
 *.xcodeproj
 *.xcworkspace
+/.idea
+/TPSProject.sln.DotSettings.user
+/Plugins/Developer/RiderLink
